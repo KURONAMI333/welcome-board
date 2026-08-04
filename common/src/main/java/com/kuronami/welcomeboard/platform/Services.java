@@ -1,6 +1,7 @@
 package com.kuronami.welcomeboard.platform;
 
 import com.kuronami.welcomeboard.Constants;
+import com.kuronami.welcomeboard.platform.services.IConfigHelper;
 import com.kuronami.welcomeboard.platform.services.IPlatformHelper;
 
 import java.util.ServiceLoader;
@@ -14,6 +15,9 @@ public class Services {
     // For example this can be used to check if the code is running on Forge vs Fabric, or to ask the modloader if another
     // mod is loaded.
     public static final IPlatformHelper PLATFORM = load(IPlatformHelper.class);
+
+    // Player-facing config (DESIGN_COMPILE.md U6): NeoForge = ModConfigSpec, Fabric = fixed defaults.
+    public static final IConfigHelper CONFIG = load(IConfigHelper.class);
 
     // This code is used to load a service for the current environment. Your implementation of the service must be defined
     // manually by including a text file in META-INF/services named with the fully qualified class name of the service.
