@@ -1,0 +1,7 @@
+{
+  "welcome_board.configuration.title": "Welcome Board",
+  "welcome_board.configuration.section.welcome.board.client.toml": "%s",
+  "welcome_board.configuration.enabled": "사용",
+  "welcome_board.configuration.enabled.tooltip": "Welcome Board를 표시할 수 있는지 여부입니다.",
+  "welcome_board.close": "닫기"
+}

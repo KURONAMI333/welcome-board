@@ -168,8 +168,12 @@ public final class WelcomeBoardScreen extends Screen {
     }
 
     private void addCloseButton() {
-        String closeLabelText = content.closeText().isEmpty() ? "Close" : content.closeText();
-        Component closeLabel = Component.literal(closeLabelText);
+        // The fallback is player-facing, so it goes through the language files. The pack author's
+        // own close_text is shown verbatim — it is their copy, not ours, and they localise it in
+        // their own content file.
+        Component closeLabel = content.closeText().isEmpty()
+                ? Component.translatable("welcome_board.close")
+                : Component.literal(content.closeText());
         int closeWidth = Math.max(60, font.width(closeLabel) + 20);
 
         // Centered, alone, in the close-button band — the panel's one structurally-guaranteed
