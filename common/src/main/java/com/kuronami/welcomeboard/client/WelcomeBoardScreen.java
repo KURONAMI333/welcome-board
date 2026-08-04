@@ -1,7 +1,6 @@
 package com.kuronami.welcomeboard.client;
 
 import com.kuronami.welcomeboard.Constants;
-import com.kuronami.welcomeboard.config.LayoutPreset;
 import com.kuronami.welcomeboard.content.Anchor;
 import com.kuronami.welcomeboard.content.WelcomeButton;
 import com.kuronami.welcomeboard.content.WelcomeContent;
@@ -22,13 +21,17 @@ import net.minecraft.util.FormattedCharSequence;
 import java.util.List;
 
 /**
- * Draws one welcome-board content file (DESIGN_COMPILE.md U4). The optional image and each
- * button are placed at their own content-file anchor via {@link LayoutResolver} (panel-relative,
- * pack-author controlled — the anchor is resolved against {@link #panel}'s rectangle, not the
- * full screen); title/body/close are placed by {@link PanelGeometry} + the
- * {@link LayoutPreset}-specific arrangement below — see {@link #renderPanelContents} for why the
- * three presets are not just "the same dialog at a different size" (DESIGN_COMPILE.md §8's
- * candidate-sheet gate needs them to actually read as different layouts side by side).
+ * Draws one welcome-board content file (DESIGN_COMPILE.md U4): a single centered modal card,
+ * structurally split into a content area (title/body/image/pack-author buttons — see {@link
+ * #renderPanelContents}) and a dedicated close-button band at the panel's bottom edge (see
+ * {@link PanelGeometry}). The content area and the close-button band never share space: the
+ * content area's height excludes the band entirely, and every content-file anchor (buttons,
+ * image) resolves against the content area's rectangle, not the full panel — so a pack author's
+ * {@code bottom_left}/{@code bottom_right}/{@code center} placement can never land the close
+ * button underneath or beside their own button (see {@link #resolveInPanel}). It remains possible
+ * for a pack author's own body text and their own button to overlap each other (e.g. a button
+ * anchored {@code center}); that is the author's own placement choice, not something this class
+ * guards against.
  *
  * <p>URL buttons never open a link directly (DESIGN_COMPILE.md's constraint): they push vanilla's
  * {@link ConfirmLinkScreen} first, same as every other in-game "open this link?" prompt, and
@@ -47,14 +50,23 @@ public final class WelcomeBoardScreen extends Screen {
     private static final int PADDING = 10;
     private static final int LINE_SPACING = 1;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int CLOSE_BUTTON_MARGIN = 6;
-    private static final int BANNER_IMAGE_COLUMN_WIDTH = 48;
 
-    // Gap above/below the title-divider rule (defect ③: title vs body needed a real break, not
-    // just a color difference nobody notices against a dark panel — see #renderPanelContents).
+    // Gap above/below the title-divider rule (title needed a real break from the body, not just a
+    // color difference nobody notices against a dark panel — see #renderPanelContents).
     private static final int TITLE_RULE_GAP_ABOVE = 3;
     private static final int TITLE_RULE_GAP_BELOW = 4;
     private static final int TITLE_RULE_HEIGHT = 1;
+
+    // Close-button band: a footer strip reserved exclusively for the close button (see
+    // PanelGeometry's javadoc). It uses the same divider visual language as the title rule, then a
+    // margin above and below the button itself. Fixed size, independent of content, so it is
+    // never squeezed by a tall content file — PanelGeometry.of() always adds this on top of the
+    // measured content-area height before clamping the panel's total height.
+    private static final int CLOSE_BAND_DIVIDER_GAP_ABOVE = TITLE_RULE_GAP_ABOVE;
+    private static final int CLOSE_BAND_DIVIDER_HEIGHT = TITLE_RULE_HEIGHT;
+    private static final int CLOSE_BUTTON_MARGIN = 6;
+    private static final int CLOSE_BAND_HEIGHT =
+            CLOSE_BAND_DIVIDER_GAP_ABOVE + CLOSE_BAND_DIVIDER_HEIGHT + CLOSE_BUTTON_MARGIN * 2 + BUTTON_HEIGHT;
 
     private static final int PANEL_BACKGROUND_COLOR = 0xE0101010;
     private static final int PANEL_BORDER_COLOR = 0x80FFFFFF;
@@ -63,33 +75,30 @@ public final class WelcomeBoardScreen extends Screen {
     private static final int TITLE_RULE_COLOR = 0x33FFFFFF;
 
     private final WelcomeContent content;
-    private final LayoutPreset preset;
     private final Runnable onClosed;
 
     private PanelGeometry panel;
 
-    public WelcomeBoardScreen(WelcomeContent content, LayoutPreset preset, Runnable onClosed) {
+    public WelcomeBoardScreen(WelcomeContent content, Runnable onClosed) {
         super(Component.literal(content.title()));
         this.content = content;
-        this.preset = preset != null ? preset : LayoutPreset.DEFAULT;
         this.onClosed = onClosed;
     }
 
     @Override
     protected void init() {
-        // Panel width only depends on the preset + screen width (PanelGeometry#widthFor), so it
-        // can be resolved before the panel itself: word-wrapping the body (needed to measure how
-        // tall the content actually is) needs that width first.
-        int panelWidth = PanelGeometry.widthFor(preset, width);
-        boolean bannerImageColumn = preset == LayoutPreset.BANNER && hasImage();
-        int textWidth = computeTextWidth(panelWidth, bannerImageColumn);
-        int desiredContentHeight = estimateContentHeight(textWidth, bannerImageColumn);
+        // Panel width only depends on screen width (PanelGeometry#widthFor), so it can be resolved
+        // before the panel itself: word-wrapping the body (needed to measure how tall the content
+        // actually is) needs that width first.
+        int panelWidth = PanelGeometry.widthFor(width);
+        int textWidth = computeTextWidth(panelWidth);
+        int desiredContentAreaHeight = estimateContentAreaHeight(textWidth);
 
-        this.panel = PanelGeometry.forPreset(preset, width, height, desiredContentHeight);
-        if (panel.height() < desiredContentHeight) {
+        this.panel = PanelGeometry.of(width, height, panelWidth, desiredContentAreaHeight, CLOSE_BAND_HEIGHT);
+        if (panel.contentAreaHeight() < desiredContentAreaHeight) {
             Constants.LOG.warn(
-                    "Welcome Board: content needs about {}px of height but the {} panel is capped at {}px on a {}x{} screen; truncating the overflow.",
-                    desiredContentHeight, preset, panel.height(), width, height);
+                    "Welcome Board: content needs about {}px of height but the panel's content area is capped at {}px on a {}x{} screen; truncating the overflow.",
+                    desiredContentAreaHeight, panel.contentAreaHeight(), width, height);
         }
 
         addCloseButton();
@@ -104,20 +113,17 @@ public final class WelcomeBoardScreen extends Screen {
     }
 
     /** Mirrors the text-area width {@link #renderPanelContents} actually draws into. */
-    private int computeTextWidth(int panelWidth, boolean bannerImageColumn) {
-        return panelWidth - PADDING * 2 - (bannerImageColumn ? BANNER_IMAGE_COLUMN_WIDTH : 0)
-                - (preset == LayoutPreset.BANNER ? PADDING * 2 : 0);
+    private int computeTextWidth(int panelWidth) {
+        return panelWidth - PADDING * 2;
     }
 
     /**
-     * Defect ②: the panel used to be a fixed fraction of the screen regardless of content, leaving
-     * a dead gap between the body and the close button whenever a file had little to say. This sums
-     * the pixel height the content will actually occupy at {@code textWidth} — title + divider rule,
-     * every wrapped body line, the image (stacked into the flow for CARD/FULL; just a floor for
-     * BANNER's side-by-side image column), and the close-button row — so {@link PanelGeometry} can
-     * size the panel to match instead of guessing.
+     * Sums the pixel height the content area alone (title + body + image — never the close-button
+     * band, which is fixed-size and added separately by {@link PanelGeometry#of}) will actually
+     * occupy at {@code textWidth}, so {@link PanelGeometry} can size the panel to match instead of
+     * guessing.
      */
-    private int estimateContentHeight(int textWidth, boolean bannerImageColumn) {
+    private int estimateContentAreaHeight(int textWidth) {
         int contentHeight = PADDING;
 
         if (!content.title().isEmpty()) {
@@ -130,20 +136,7 @@ public final class WelcomeBoardScreen extends Screen {
         }
 
         if (hasImage()) {
-            int imageHeight = content.image().height();
-            if (bannerImageColumn) {
-                // Side-by-side column, not stacked below the text: the panel just needs to be at
-                // least as tall as the image, not taller by the image's height on top of the text.
-                contentHeight = Math.max(contentHeight, PADDING + imageHeight);
-            } else {
-                contentHeight += imageHeight;
-            }
-        }
-
-        if (preset != LayoutPreset.BANNER) {
-            // BANNER's close button is vertically centered in the panel (see #addCloseButton), not
-            // a reserved bottom row, so it doesn't add to the content's own vertical footprint.
-            contentHeight += CLOSE_BUTTON_MARGIN + BUTTON_HEIGHT + PADDING / 2;
+            contentHeight += content.image().height();
         }
 
         return contentHeight + PADDING;
@@ -154,17 +147,11 @@ public final class WelcomeBoardScreen extends Screen {
         Component closeLabel = Component.literal(closeLabelText);
         int closeWidth = Math.max(60, font.width(closeLabel) + 20);
 
-        int closeX;
-        int closeY;
-        if (preset == LayoutPreset.BANNER) {
-            // Toast-like dismiss: pinned to the panel's right edge instead of bottom-center, so
-            // BANNER actually reads as a different arrangement rather than a shorter CARD.
-            closeX = panel.x() + panel.width() - closeWidth - PADDING;
-            closeY = panel.y() + (panel.height() - BUTTON_HEIGHT) / 2;
-        } else {
-            closeX = panel.x() + (panel.width() - closeWidth) / 2;
-            closeY = panel.y() + panel.height() - BUTTON_HEIGHT - CLOSE_BUTTON_MARGIN;
-        }
+        // Centered, alone, in the close-button band — the panel's one structurally-guaranteed
+        // primary action (never shares the row with a pack-author button, unlike the layout this
+        // replaced).
+        int closeX = panel.x() + (panel.width() - closeWidth) / 2;
+        int closeY = panel.y() + panel.height() - CLOSE_BUTTON_MARGIN - BUTTON_HEIGHT;
 
         addRenderableWidget(Button.builder(closeLabel, button -> onClose())
                 .bounds(closeX, closeY, closeWidth, BUTTON_HEIGHT)
@@ -184,17 +171,18 @@ public final class WelcomeBoardScreen extends Screen {
     }
 
     /**
-     * Defect ①: anchors are resolved against the panel rectangle, not the full screen — a
-     * content-file "bottom_left" button/image belongs in the panel's bottom-left corner, not stuck
-     * to the screen's corner where it reads as unrelated to the dialog and collides with the
-     * hotbar. {@link LayoutResolver} itself is unchanged (still a screen-size-agnostic pure
-     * function); only the rectangle callers feed it changed — and that rectangle is inset by
-     * {@link #PADDING} on every side (matching the text's own inset), so a corner anchor lands
-     * with the same breathing room as the panel edge instead of flush against the border.
+     * Resolves a content-file anchor against the panel's <em>content area</em> — the strip above
+     * the close-button band, per {@link PanelGeometry} — not the full panel and not the full
+     * screen. A content-file "bottom_left" button/image belongs in the content area's bottom-left
+     * corner, which structurally sits above the close button rather than colliding with it.
+     * {@link LayoutResolver} itself is unchanged (still a screen-size-agnostic pure function);
+     * only the rectangle callers feed it changed — and that rectangle is inset by {@link
+     * #PADDING} on every side (matching the text's own inset), so a corner anchor lands with the
+     * same breathing room as the content area's edge instead of flush against the border.
      */
     private Point resolveInPanel(Anchor anchor, int elementWidth, int elementHeight, int offsetX, int offsetY) {
         int innerWidth = Math.max(0, panel.width() - PADDING * 2);
-        int innerHeight = Math.max(0, panel.height() - PADDING * 2);
+        int innerHeight = Math.max(0, panel.contentAreaHeight() - PADDING * 2);
         Point resolved = LayoutResolver.resolve(innerWidth, innerHeight, elementWidth, elementHeight,
                 anchor, offsetX, offsetY);
         return new Point(panel.x() + PADDING + resolved.x(), panel.y() + PADDING + resolved.y());
@@ -223,45 +211,28 @@ public final class WelcomeBoardScreen extends Screen {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderPanelContents(guiGraphics);
+        renderCloseBandDivider(guiGraphics);
         renderImage(guiGraphics);
     }
 
     /**
-     * Title/body placement genuinely differs per preset, not just the panel's size — the whole
-     * point of the three-way comparison (DESIGN_COMPILE.md §8):
-     * <ul>
-     *   <li>{@code CARD}: classic left-aligned dialog text block.</li>
-     *   <li>{@code BANNER}: a left text column that leaves room for the image column and the
-     *       right-pinned close button (see {@link #addCloseButton}), not a shrunk CARD.</li>
-     *   <li>{@code FULL}: centered title and centered body lines, filling the larger panel.</li>
-     * </ul>
-     * Body text is clamped to the space above the close button (or, for {@code BANNER}, above the
-     * panel's bottom edge) rather than left to overflow past it.
+     * Left-aligned title/body block, clamped to the content area (never past its bottom edge —
+     * that space belongs to the close-button band, see {@link PanelGeometry}).
      */
     private void renderPanelContents(GuiGraphics guiGraphics) {
-        boolean bannerImageColumn = preset == LayoutPreset.BANNER && hasImage();
-
-        int textX = panel.x() + PADDING + (bannerImageColumn ? BANNER_IMAGE_COLUMN_WIDTH : 0);
-        int textWidth = computeTextWidth(panel.width(), bannerImageColumn);
-        int maxY = preset == LayoutPreset.BANNER
-                ? panel.y() + panel.height() - PADDING
-                : panel.y() + panel.height() - BUTTON_HEIGHT - CLOSE_BUTTON_MARGIN - PADDING / 2;
+        int textX = panel.x() + PADDING;
+        int textWidth = computeTextWidth(panel.width());
+        int maxY = panel.closeBandY();
 
         int y = panel.y() + PADDING;
-        boolean centered = preset == LayoutPreset.FULL;
-        int centerX = panel.x() + panel.width() / 2;
 
         if (!content.title().isEmpty()) {
-            // Defect ③: bold weight + a divider rule gives the title a real break from the body
-            // instead of relying on the barely-perceptible white-vs-light-gray color difference
-            // alone (negative_list.md: no glow/gradient/dot — just weight + a muted rule, same
-            // register as vanilla's own panel headers).
+            // Bold weight + a divider rule gives the title a real break from the body instead of
+            // relying on the barely-perceptible white-vs-light-gray color difference alone
+            // (negative_list.md: no glow/gradient/dot — just weight + a muted rule, same register
+            // as vanilla's own panel headers).
             Component title = Component.literal(content.title()).withStyle(ChatFormatting.BOLD);
-            if (centered) {
-                guiGraphics.drawCenteredString(font, title, centerX, y, TITLE_COLOR);
-            } else {
-                guiGraphics.drawString(font, title, textX, y, TITLE_COLOR);
-            }
+            guiGraphics.drawString(font, title, textX, y, TITLE_COLOR);
             y += font.lineHeight + TITLE_RULE_GAP_ABOVE;
             guiGraphics.fill(textX, y, textX + textWidth, y + TITLE_RULE_HEIGHT, TITLE_RULE_COLOR);
             y += TITLE_RULE_HEIGHT + TITLE_RULE_GAP_BELOW;
@@ -271,16 +242,20 @@ public final class WelcomeBoardScreen extends Screen {
             List<FormattedCharSequence> wrappedLines = font.split(FormattedText.of(bodyLine), textWidth);
             for (FormattedCharSequence wrapped : wrappedLines) {
                 if (y + font.lineHeight > maxY) {
-                    return; // Clamp rather than overflow onto the close button/panel edge.
+                    return; // Clamp rather than overflow into the close-button band.
                 }
-                if (centered) {
-                    guiGraphics.drawCenteredString(font, wrapped, centerX, y, BODY_COLOR);
-                } else {
-                    guiGraphics.drawString(font, wrapped, textX, y, BODY_COLOR);
-                }
+                guiGraphics.drawString(font, wrapped, textX, y, BODY_COLOR);
                 y += font.lineHeight + LINE_SPACING;
             }
         }
+    }
+
+    /** Divider between the content area and the close-button band, same register as the title rule. */
+    private void renderCloseBandDivider(GuiGraphics guiGraphics) {
+        int textX = panel.x() + PADDING;
+        int textWidth = computeTextWidth(panel.width());
+        int y = panel.closeBandY() + CLOSE_BAND_DIVIDER_GAP_ABOVE;
+        guiGraphics.fill(textX, y, textX + textWidth, y + CLOSE_BAND_DIVIDER_HEIGHT, TITLE_RULE_COLOR);
     }
 
     private void renderImage(GuiGraphics guiGraphics) {

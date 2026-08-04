@@ -1,7 +1,6 @@
 package com.kuronami.welcomeboard.client;
 
 import com.kuronami.welcomeboard.Constants;
-import com.kuronami.welcomeboard.config.LayoutPreset;
 import com.kuronami.welcomeboard.platform.Services;
 import com.kuronami.welcomeboard.seen.SeenFileStore;
 import com.kuronami.welcomeboard.seen.SeenStateEvaluator;
@@ -118,8 +117,7 @@ public final class DisplayQueueController {
         }
 
         ContentFileLoader.LoadedContent next = pendingQueue.poll();
-        LayoutPreset preset = Services.CONFIG.layoutPreset();
-        minecraft.setScreen(new WelcomeBoardScreen(next.content(), preset, () -> onScreenClosed(next)));
+        minecraft.setScreen(new WelcomeBoardScreen(next.content(), () -> onScreenClosed(next)));
     }
 
     private static void onScreenClosed(ContentFileLoader.LoadedContent shown) {

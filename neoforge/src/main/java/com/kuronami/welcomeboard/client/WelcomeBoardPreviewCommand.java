@@ -1,11 +1,9 @@
 package com.kuronami.welcomeboard.client;
 
 import com.kuronami.welcomeboard.Constants;
-import com.kuronami.welcomeboard.config.LayoutPreset;
 import com.kuronami.welcomeboard.content.ContentParser;
 import com.kuronami.welcomeboard.content.ParseResult;
 import com.kuronami.welcomeboard.content.WelcomeContent;
-import com.kuronami.welcomeboard.platform.Services;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
@@ -22,14 +20,12 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 /**
- * {@code /welcomeboard preview [card|banner|full]} — opens the welcome-board screen on demand so a
- * pack author can check their {@code config/welcome_board/welcome.json} without waiting for the
- * once-per-session trigger.
+ * {@code /welcomeboard preview} — opens the welcome-board screen on demand so a pack author can
+ * check their {@code config/welcome_board/welcome.json} without waiting for the once-per-session
+ * trigger.
  *
- * <p>Deliberately bypasses both {@link com.kuronami.welcomeboard.seen.SeenFileStore} (never read or
- * written here — this is a look, not an acknowledgement) and the persisted {@code layout_preset}
- * config value (the optional preset argument overrides only this one invocation; falls back to
- * {@link Services#CONFIG}'s current value when omitted). Re-parses {@code welcome.json} fresh on
+ * <p>Deliberately bypasses {@link com.kuronami.welcomeboard.seen.SeenFileStore} (never read or
+ * written here — this is a look, not an acknowledgement). Re-parses {@code welcome.json} fresh on
  * every call — via {@link ContentParser} directly rather than {@link ContentFileLoader#loadAll()},
  * because {@code loadAll()} only logs {@link ParseResult#warnings()} and this command's whole point
  * is putting those warnings in the pack author's chat instead.
@@ -54,13 +50,10 @@ public final class WelcomeBoardPreviewCommand {
         event.getDispatcher().register(
                 Commands.literal("welcomeboard")
                         .then(Commands.literal("preview")
-                                .executes(ctx -> preview(ctx.getSource(), null))
-                                .then(Commands.literal("card").executes(ctx -> preview(ctx.getSource(), LayoutPreset.CARD)))
-                                .then(Commands.literal("banner").executes(ctx -> preview(ctx.getSource(), LayoutPreset.BANNER)))
-                                .then(Commands.literal("full").executes(ctx -> preview(ctx.getSource(), LayoutPreset.FULL)))));
+                                .executes(ctx -> preview(ctx.getSource()))));
     }
 
-    private static int preview(CommandSourceStack source, LayoutPreset presetOverride) {
+    private static int preview(CommandSourceStack source) {
         Path file = ContentFileLoader.configDir().resolve(CONTENT_FILE_NAME);
 
         byte[] bytes;
@@ -81,7 +74,6 @@ public final class WelcomeBoardPreviewCommand {
         }
 
         WelcomeContent content = parsed.content();
-        LayoutPreset preset = presetOverride != null ? presetOverride : Services.CONFIG.layoutPreset();
 
         // Deferred via tell(), not execute(): the ChatScreen that dispatched this command calls
         // setScreen(null) right after handleChatInput() returns (see ChatScreen#keyPressed), on the
@@ -92,7 +84,7 @@ public final class WelcomeBoardPreviewCommand {
         // tell() always enqueues onto pendingRunnables regardless, so it runs on the next
         // runAllTasks() pass (start of the next runTick()) — strictly after ChatScreen closes.
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.tell(() -> minecraft.setScreen(new WelcomeBoardScreen(content, preset, null)));
+        minecraft.tell(() -> minecraft.setScreen(new WelcomeBoardScreen(content, null)));
 
         return 1;
     }
