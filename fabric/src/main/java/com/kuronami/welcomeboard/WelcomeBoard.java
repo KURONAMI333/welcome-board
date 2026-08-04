@@ -12,7 +12,6 @@ public class WelcomeBoard implements ModInitializer {
         // project.
 
         // Use Fabric to bootstrap the Common mod.
-        Constants.LOG.info("Hello Fabric world!");
         CommonClass.init();
     }
 }
