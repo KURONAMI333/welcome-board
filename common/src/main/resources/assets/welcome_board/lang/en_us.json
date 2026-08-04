@@ -2,10 +2,5 @@
     "welcome_board.configuration.title": "Welcome Board",
     "welcome_board.configuration.section.welcome.board.client.toml": "%s",
     "welcome_board.configuration.enabled": "Enabled",
-    "welcome_board.configuration.enabled.tooltip": "Whether the welcome board can be shown at all.",
-    "welcome_board.configuration.layoutPreset": "Layout",
-    "welcome_board.configuration.layoutPreset.tooltip": "Which screen layout the welcome board uses.",
-    "welcome_board.configuration.layoutPreset.card": "Card",
-    "welcome_board.configuration.layoutPreset.banner": "Banner",
-    "welcome_board.configuration.layoutPreset.full": "Full"
+    "welcome_board.configuration.enabled.tooltip": "Whether the welcome board can be shown at all."
 }

@@ -1,6 +1,5 @@
 package com.kuronami.welcomeboard.platform;
 
-import com.kuronami.welcomeboard.config.LayoutPreset;
 import com.kuronami.welcomeboard.platform.services.IConfigHelper;
 
 /**
@@ -14,10 +13,5 @@ public class FabricConfigHelper implements IConfigHelper {
     @Override
     public boolean enabled() {
         return true;
-    }
-
-    @Override
-    public LayoutPreset layoutPreset() {
-        return LayoutPreset.DEFAULT;
     }
 }
