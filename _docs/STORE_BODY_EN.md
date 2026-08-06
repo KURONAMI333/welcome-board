@@ -76,6 +76,6 @@ The command is NeoForge-only in this version. On Fabric the screen itself works 
 
 Install on the client. No dependencies, and nothing to install server-side.
 
-MIT — modpack inclusion welcome, no credit required.
+All Rights Reserved. Free to include in modpacks on CurseForge and Modrinth (monetised ones too) — no permission needed, no credit required. Source is published so you can read exactly what it does.
 
 Source and issues: https://github.com/KURONAMI333/welcome-board
