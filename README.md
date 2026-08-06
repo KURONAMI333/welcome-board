@@ -1,32 +1,65 @@
-# MultiLoader Template
+# Welcome Board
 
-This project provides a Gradle project template that can compile Minecraft mods for multiple modloaders using a common project for the sources. This project does not require any third party libraries or dependencies. If you have any questions or want to discuss the project, please join our [Discord](https://discord.myceliummod.network).
+> Drop one JSON file into your modpack and every player sees a welcome screen the first time they join. No FancyMenu, no Better Compatibility Checker, no other mod required.
 
-## Getting Started
+This is for modpack authors, not players.
 
-### IntelliJ IDEA
-This guide will show how to import the MultiLoader Template into IntelliJ IDEA. The setup process is roughly equivalent to setting up the modloaders independently and should be very familiar to anyone who has worked with their MDKs.
+## What it does
 
-1. Clone or download this repository to your computer.
-2. Configure the project by setting the properties in the `gradle.properties` file. You will also need to change the `rootProject.name`  property in `settings.gradle`, this should match the folder name of your project, or else IDEA may complain.
-3. Open the template's root folder as a new project in IDEA. This is the folder that contains this README.md file and the gradlew executable.
-4. If your default JVM/JDK is not Java 21 you will encounter an error when opening the project. This error is fixed by going to `File > Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JVM` and changing the value to a valid Java 21 JVM. You will also need to set the Project SDK to Java 21. This can be done by going to `File > Project Structure > Project SDK`. Once both have been set open the Gradle tab in IDEA and click the refresh button to reload the project.
-5. Open your Run/Debug Configurations. Under the `Application` category there should now be options to run Fabric and NeoForge projects. Select one of the client options and try to run it.
-6. Assuming you were able to run the game in step 5 your workspace should now be set up.
+Reads `config/welcome_board/welcome.json` and shows a screen on first join: a title, body text, an optional image, and a row of link buttons. It appears once per player and then never again — unless you bump the `revision` number, in which case it shows once more.
 
-### Eclipse
-While it is possible to use this template in Eclipse it is not recommended. During the development of this template multiple critical bugs and quirks related to Eclipse were found at nearly every level of the required build tools. While we continue to work with these tools to report and resolve issues support for projects like these are not there yet. For now Eclipse is considered unsupported by this project. The development cycle for build tools is notoriously slow so there are no ETAs available.
+```json
+{
+  "revision": 1,
+  "title": "Welcome to Example Pack",
+  "body": [
+    "Thanks for downloading. A few things before you start:",
+    "Crafting recipes are unchanged except where noted on the wiki.",
+    "Join our Discord if you run into problems."
+  ],
+  "buttons": [
+    { "text": "Wiki", "url": "https://example.com/wiki", "anchor": "bottom_left" },
+    { "text": "Discord", "url": "https://discord.gg/example", "anchor": "bottom_right" }
+  ],
+  "close_text": "Got it"
+}
+```
 
-## Development Guide
-When using this template the majority of your mod should be developed in the `common` project. The `common` project is compiled against the vanilla game and is used to hold code that is shared between the different loader-specific versions of your mod. The `common` project has no knowledge or access to ModLoader specific code, apis, or concepts. Code that requires something from a specific loader must be done through the project that is specific to that loader, such as the `fabric` or `neoforge` projects.
+Every field is optional and independently defaulted. A file missing `title` still shows a screen; a malformed button is dropped and the rest still renders. **Nothing you get wrong in this file makes the screen fail to appear** — the log, or `/welcomeboard preview`, tells you what was skipped and why.
 
-Loader specific projects such as the `fabric` and `neoforge` project are used to load the `common` project into the game. These projects also define code that is specific to that loader. Loader specific projects can access all the code in the `common` project. It is important to remember that the `common` project can not access code from loader specific projects.
+`anchor` accepts `top`, `top_left`, `top_right`, `center`, `left`, `right`, `bottom`, `bottom_left`, `bottom_right`. For buttons only the horizontal part matters — buttons always sit in their own row at the bottom of the panel, so they can never overlap your text or the close button.
 
-## Removing Platforms and Loaders
-While this template has support for many modloaders, new loaders may appear in the future, and existing loaders may become less relevant.
+Limits: 8 buttons, 32 body lines, 64 KB per file. About four buttons fit across the row at a typical panel width, so put the important links first. Anything over a limit is dropped with a logged warning rather than breaking the screen.
 
-Removing loader specific projects is as easy as deleting the folder, and removing the `include("projectname")` line from the `settings.gradle` file.
-For example if you wanted to remove support for `forge` you would follow the following steps:
+## Multiple content files
 
-1. Delete the subproject folder. For example, delete `MultiLoader-Template/forge`.
-2. Remove the project from `settings.gradle`. For example, remove `include("forge")`. 
+Any file in `config/welcome_board/` other than `seen.json` is loaded as its own piece of content, keyed by filename. `welcome.json` and `patch_notes.json` can coexist, each with its own read state and its own `revision`.
+
+## Commands
+
+`/welcomeboard preview` opens your own screen on demand without touching read state — use it while you're editing the file. Parser warnings are printed to your chat at the same time, so a typo shows up immediately instead of silently doing nothing. NeoForge only in this version; the screen itself works the same on Fabric.
+
+## Behavior
+
+- Waits about a second after world join, then checks whether another mod's first-join screen (Origins and similar) is already open. If one is, it waits up to three more seconds for it to close before giving up for that session and logging why. It never fights another mod for the screen.
+- Read state is tracked per server/world, not per game instance — the same pack on two different servers shows the screen once on each.
+- One setting: `enabled`.
+
+## Not in this version
+
+- No server-authoritative content push (the file lives on each client)
+- No multi-page navigation inside a single screen
+- No commands run from a button — buttons only open a URL
+- One image per content file
+
+## Client-side only
+
+There is no server component. Put it in the pack's client mods and you are done.
+
+## Supported
+
+Minecraft 1.21.1 (NeoForge, Fabric) · Minecraft 26.1.2 and 26.2 (NeoForge). Nine languages.
+
+## License
+
+MIT — modpack inclusion welcome, no credit required.

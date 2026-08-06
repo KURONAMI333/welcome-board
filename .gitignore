@@ -26,3 +26,8 @@ runs
 # KURONAMI: handoff/gap docs are not published
 _handoff/
 GAP_LOG.md
+
+# 公開しない（既存 MOD repo の慣例に合わせる）
+# branding = ロゴ制作物と落選候補 / DESIGN_COMPILE = 競合分析を含む内部設計書
+branding/
+DESIGN_COMPILE.md
