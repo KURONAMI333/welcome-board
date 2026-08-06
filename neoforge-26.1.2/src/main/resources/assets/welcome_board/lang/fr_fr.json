@@ -1,0 +1,7 @@
+{
+  "welcome_board.configuration.title": "Welcome Board",
+  "welcome_board.configuration.section.welcome.board.client.toml": "%s",
+  "welcome_board.configuration.enabled": "Activé",
+  "welcome_board.configuration.enabled.tooltip": "Indique si le Welcome Board peut s'afficher.",
+  "welcome_board.close": "Fermer"
+}
