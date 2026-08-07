@@ -62,4 +62,4 @@ Minecraft 1.21.1 (NeoForge, Fabric) · Minecraft 26.1.2 and 26.2 (NeoForge). Nin
 
 ## License
 
-All Rights Reserved. Free to include in modpacks on CurseForge and Modrinth (monetised ones too) — no permission needed, no credit required. Source is published so you can read exactly what it does.
+All Rights Reserved. Free to put in any modpack, on any platform, monetised or not - no permission needed, no credit required. Source is published so you can read exactly what it does.

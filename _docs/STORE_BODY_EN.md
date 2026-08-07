@@ -2,15 +2,17 @@
 KURONAMI store description (Modrinth body / CurseForge description — shared, English).
 Follows knowledge/STORE_BODY_FRAMEWORK.md (no version table, function-first hook, facts over adjectives).
 
-DRAFT — publish at release, not before. Open item:
-1. Gallery screenshots — add captioned images before publish per STORE_DESCRIPTION_GUIDE §7
-   (zero images is an auto-moderation flag; Trade Diary has been withheld 80+ days).
+Published 2026-08-07. This block records what was actually set on each store; the
+body below it is what goes in the description field.
 
-== Store fields (set separately from the body) ==
-SUMMARY: Drop one JSON file in and modpack players see a welcome screen on first join, no other mods required.
-MODRINTH categories: utility | loaders: neoforge, fabric | versions: 1.21.1, 26.1.2, 26.2 | env: client REQUIRED, server UNSUPPORTED (there is no server-side code)
-MODRINTH slug: welcome-board
-CURSEFORGE: main category = Server Utility; additional = Miscellaneous | summary: Modpack authors drop one JSON file in and players see a welcome screen on first join. No other mods required.
+== Store fields as set ==
+MODRINTH  (wT3Fx5Nq, slug welcome-board): categories=utility | env: client REQUIRED,
+          server UNSUPPORTED (there is no server-side code) | license LicenseRef-All-Rights-Reserved
+          | gallery 2 | 4 versions, all environment=client_only, fabric version declares fabric-api
+CURSEFORGE (project 1642803): Class=Mods | main category=Utility & QoL | Allow Comments=ON
+          | license=All Rights Reserved | distribution=Allow distribution to 3rd party
+          (required so modpacks using external launchers do not break)
+SUMMARY: Modpack authors drop one JSON file in and players see a welcome screen on first join. No other mods required.
 -->
 
 # Welcome Board
@@ -76,6 +78,6 @@ The command is NeoForge-only in this version. On Fabric the screen itself works 
 
 Install on the client. No dependencies, and nothing to install server-side.
 
-All Rights Reserved. Free to include in modpacks on CurseForge and Modrinth (monetised ones too) — no permission needed, no credit required. Source is published so you can read exactly what it does.
+All Rights Reserved. Free to put in any modpack, on any platform, monetised or not - no permission needed, no credit required. Source is published so you can read exactly what it does.
 
 Source and issues: https://github.com/KURONAMI333/welcome-board
