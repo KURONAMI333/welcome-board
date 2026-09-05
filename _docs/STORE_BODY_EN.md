@@ -1,27 +1,6 @@
-<!--
-KURONAMI store description (Modrinth body / CurseForge description — shared, English).
-Follows knowledge/STORE_BODY_FRAMEWORK.md (no version table, function-first hook, facts over adjectives).
-
-Published 2026-08-07. This block records what was actually set on each store; the
-body below it is what goes in the description field.
-
-== Store fields as set ==
-MODRINTH  (wT3Fx5Nq, slug welcome-board): categories=utility | env: client REQUIRED,
-          server UNSUPPORTED (there is no server-side code) | license LicenseRef-All-Rights-Reserved
-          | gallery 2 | 4 versions, all environment=client_only, fabric version declares fabric-api
-CURSEFORGE (project 1642803): Class=Mods | main category=Utility & QoL | Allow Comments=ON
-          | license=All Rights Reserved | distribution=Allow distribution to 3rd party
-          (required so modpacks using external launchers do not break)
-SUMMARY: Modpack authors drop one JSON file in and players see a welcome screen on first join. No other mods required.
--->
-
-# Welcome Board
-
 Drop a JSON file in your pack's config folder and every player sees a welcome screen the first time they join. No FancyMenu, no Better Compatibility Checker, no other mod required.
 
 This is for modpack authors, not players. It reads `config/welcome_board/welcome.json` and shows a title, body text, an optional image, and a row of link buttons in a screen that appears once per player, then never again — unless you bump a `revision` number, in which case it shows once more.
-
-Client-side only. There is no server component — put it in the pack's client mods and you are done.
 
 **Content file**
 
@@ -76,8 +55,10 @@ The command is NeoForge-only in this version. On Fabric the screen itself works 
 - No commands run from a button — buttons only open a URL
 - One image per content file
 
-Install on the client. No dependencies, and nothing to install server-side.
+No dependencies are required.
 
 All Rights Reserved. Free to put in any modpack, on any platform, monetised or not - no permission needed, no credit required. Source is published so you can read exactly what it does.
 
-Source and issues: https://github.com/KURONAMI333/welcome-board
+Bugs and questions: comment on the CurseForge page, or DM @kuronami333 on X.
+
+Source: https://github.com/KURONAMI333/welcome-board
