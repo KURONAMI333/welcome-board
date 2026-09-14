@@ -10,7 +10,7 @@
     "contact": {
         "homepage": "https://modrinth.com/mod/welcome-board",
         "sources": "https://github.com/KURONAMI333/welcome-board",
-        "issues": "https://github.com/KURONAMI333/welcome-board/issues"
+        "issues": "https://x.com/kuronami333"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",

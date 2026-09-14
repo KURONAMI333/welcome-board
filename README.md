@@ -63,3 +63,11 @@ Minecraft 1.21.1 (NeoForge, Fabric) · Minecraft 26.1.2 and 26.2 (NeoForge). Nin
 ## License
 
 All Rights Reserved. Free to put in any modpack, on any platform, monetised or not - no permission needed, no credit required. Source is published so you can read exactly what it does.
+
+## Downloads and support
+
+Downloads: [GitHub Releases](https://github.com/KURONAMI333/welcome-board/releases/tag/v0.1.1).
+
+For bugs and questions, DM [@kuronami333 on X](https://x.com/kuronami333).
+
+[Source](https://github.com/KURONAMI333/welcome-board) · [License](LICENSE)
